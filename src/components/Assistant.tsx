@@ -11,6 +11,7 @@ import {
 import Voice from "@react-native-community/voice";
 import { launchCamera } from "react-native-image-picker";
 import Contacts from "react-native-contacts";
+import Tts from "react-native-tts";
 
 const Assistant = () => {
   const [command, setCommand] = useState<string>("");
@@ -22,8 +23,12 @@ const Assistant = () => {
       handleVoiceCommand(voiceCommand);
     };
 
+    Tts.setDefaultLanguage("en-US"); // Set the default language
+    Tts.setDefaultRate(0.5); // Adjust the speed of speech
+
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
+      Tts.stop();
     };
   }, []);
 
@@ -53,7 +58,7 @@ const Assistant = () => {
           granted[PermissionsAndroid.PERMISSIONS.READ_CONTACTS] !==
             PermissionsAndroid.RESULTS.GRANTED
         ) {
-          Alert.alert("Permissions", "Camera or Call permissions not granted");
+          speak("Camera or Call permissions not granted");
         }
       }
     } catch (err) {
@@ -126,7 +131,7 @@ const Assistant = () => {
     } else if (phoneNumber) {
       sendWhatsAppMessage(phoneNumber, message);
     } else {
-      Alert.alert("No Contacts available", "");
+      speak("No Contacts available");
     }
   };
 
@@ -143,12 +148,14 @@ const Assistant = () => {
         Linking.openURL(`tel:${contactNumber}`);
       }
     } else {
-      Alert.alert("Error", "No phone number found in the command");
+      speak("No phone number found in the command");
     }
   };
 
   const handleVoiceCommand = async (voiceCommand: string) => {
-    if (voiceCommand.toLowerCase().includes("open camera")) {
+    if (voiceCommand.toLowerCase().includes("hello")) {
+      speak("Hello, how can I help you today");
+    } else if (voiceCommand.toLowerCase().includes("open camera")) {
       openCamera();
     } else if (voiceCommand.toLowerCase().includes("send whatsapp message")) {
       await handleWhatsappMessage(voiceCommand);
@@ -158,7 +165,7 @@ const Assistant = () => {
     ) {
       await handleCall(voiceCommand);
     } else {
-      Alert.alert("Command Not Recognized", "The command was not recognized.");
+      speak("Command not recognized.");
     }
   };
 
@@ -179,14 +186,18 @@ const Assistant = () => {
           );
           return phoneNumber;
         } else {
-          Alert.alert("Contact Not Found", `No contact found for "${name}".`);
+          speak(`No contact found for "${name}".`);
           return null;
         }
       })
       .catch((error) => {
         console.error("Error accessing contacts:", error);
-        Alert.alert("Error", "Unable to access contacts.");
+        speak("Unable to access contacts.");
       });
+  };
+
+  const speak = (text: string) => {
+    Tts.speak(text);
   };
 
   return (
